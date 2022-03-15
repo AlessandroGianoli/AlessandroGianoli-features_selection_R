@@ -195,11 +195,3 @@ default.ct <- train(target~ ., data = dataset_sel_scaled, method = "rpart1SE")
 
 Vimportance <- varImp(default.ct)
 plot(Vimportance)
-
-
-
-set.seed(1)  
-default.ct <- train(target~ ., data = dataset_sel_scaled, method = "rpart1SE")
-
-rpart.plot(default.ct, type = 4, extra = 1)
-rpart.plot(default.ct, type = 4, extra = 101,  split.font = 0.9, ycompress=FALSE, cex=.7)
