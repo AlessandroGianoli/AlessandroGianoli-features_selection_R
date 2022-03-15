@@ -4,6 +4,8 @@ require(caret)
 library(car)
 library(PerformanceAnalytics)
 library(MASS)
+library(rpart)
+library(rpart.plot)
 options(scipen = 999, digits = 3)
 #options(warn=-1)
 
@@ -32,6 +34,10 @@ dataset$target<-factor(dataset$target)
 
 #setting shipping_cap as a categorial muticategry feature
 dataset$shipping_cap<-factor(dataset$shipping_cap)
+
+#setting referral_token  as a categorial binary feature
+dataset$referral_token<-factor(dataset$referral_token)
+
 str(dataset)
 
 #separating categorical and numerical features in two dataset
@@ -84,7 +90,7 @@ nzv = nearZeroVar(all, saveMetrics = TRUE)
 nzv
 
 # removing the feature with no variance -> service_rent_count
-dataset_sel = all [,-10]
+dataset_sel = all [,-9]
 str(dataset_sel)
 
 
@@ -102,10 +108,6 @@ dataset_scaled$bc
 dataset_sel_scaled=predict(dataset_scaled, newdata = all)
 head(dataset_sel_scaled)
 
-#comparing the distribution in the two transformed features
-#setting e two way plotting areas in the plots window
-par(mfrow=c(2,2))
-
 #comparing the distribution in the transformed feature
 #setting e two way plotting areas in the plots window
 par(mfrow=c(2,2))
@@ -117,7 +119,40 @@ hist(dataset_sel_scaled$last_sign_in_at)
 par(mfrow=c(1,1))
 
 
-# 5. Features Selection through regression model with step AIC procedure
+# 5. Visualizing data distribution compared to the target
+
+# referral_token
+counts <- table(dataset_sel_scaled$target, dataset_sel_scaled$referral_token)
+barplot(counts,
+        xlab="", col=c("darkblue","red"),
+        legend = rownames(counts),main="Referral Token",
+        args.legend=list(
+          x=ncol(counts) +0.5,
+          y=max(colSums(counts))
+        ))
+
+# coupon_count
+counts <- table(dataset_sel_scaled$target, dataset_sel_scaled$coupon_count)
+barplot(counts,
+        xlab="", col=c("darkblue","red"),
+        legend = rownames(counts),main="Coupon Count",
+        args.legend=list(
+          x=ncol(counts) +0.5,
+          y=max(colSums(counts))
+        ))
+
+# used_bonus_points
+counts <- table(dataset_sel_scaled$target, dataset_sel_scaled$used_bonus_points)
+barplot(counts,
+        xlab="", col=c("darkblue","red"),
+        legend = rownames(counts),main="Used Bonus Points",
+        args.legend=list(
+          x=ncol(counts) +0.5,
+          y=max(colSums(counts))
+        ))
+
+
+# 6. Features Selection through regression model with step AIC procedure
 
 fit <- glm(target~. , data=dataset_sel_scaled, family="binomial")
 summary(fit)
@@ -134,7 +169,37 @@ confusionMatrix(glm_aicPP)
 summary(glm_aicPP)
 
 
-# 6. Features Selection through Decision Tree
+# 7. Features Selection through Decision Tree
+
+set.seed(1)
+Max_tree <- rpart(target ~ ., data = dataset_sel_scaled, method = "class", cp = 0, minsplit = 1)
+rpart.plot(Max_tree, type = 4, extra = 1)  
+
+# number of times each variable has been used in a split
+ls(Max_tree)
+ls(Max_tree$frame)
+a=data.frame(Max_tree$frame$var)
+table(a)
+
+# complexity of the tree
+ls(Max_tree)
+Max_tree$cptable
+plotcp(Max_tree)
+
+# variable importance
+vi=data.frame(Max_tree$variable.importance)
+vi
+
+set.seed(1)  
+default.ct <- train(target~ ., data = dataset_sel_scaled, method = "rpart1SE")
+
+Vimportance <- varImp(default.ct)
+plot(Vimportance)
 
 
-    
+
+set.seed(1)  
+default.ct <- train(target~ ., data = dataset_sel_scaled, method = "rpart1SE")
+
+rpart.plot(default.ct, type = 4, extra = 1)
+rpart.plot(default.ct, type = 4, extra = 101,  split.font = 0.9, ycompress=FALSE, cex=.7)
