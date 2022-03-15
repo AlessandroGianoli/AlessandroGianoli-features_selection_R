@@ -173,7 +173,6 @@ summary(glm_aicPP)
 
 set.seed(1)
 Max_tree <- rpart(target ~ ., data = dataset_sel_scaled, method = "class", cp = 0, minsplit = 1)
-rpart.plot(Max_tree, type = 4, extra = 1)  
 
 # number of times each variable has been used in a split
 ls(Max_tree)
